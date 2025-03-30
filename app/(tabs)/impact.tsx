@@ -4,6 +4,7 @@ import {
 	StyleSheet,
 	ScrollView,
 	TouchableOpacity,
+	Image,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -11,16 +12,20 @@ import { useRouter } from "expo-router";
 interface ImpactStats {
 	totalDonations: number;
 	totalAmount: number;
-	activeCampaigns: number;
-	completedCampaigns: number;
+	childrenHelped: number;
+	schoolsSupported: number;
+	communitiesReached: number;
+	lastUpdate: string;
 }
 
 // Placeholder data - in a real app, this would come from an API
-const placeholderStats: ImpactStats = {
+const impactStats: ImpactStats = {
 	totalDonations: 150,
 	totalAmount: 25000,
-	activeCampaigns: 8,
-	completedCampaigns: 12,
+	childrenHelped: 100,
+	schoolsSupported: 5,
+	communitiesReached: 3,
+	lastUpdate: "2024-03-15",
 };
 
 type MaterialIconName = keyof typeof MaterialIcons.glyphMap;
@@ -40,54 +45,76 @@ export default function ImpactScreen() {
 		</View>
 	);
 
+	const ImpactStory = ({
+		title,
+		description,
+		image,
+	}: { title: string; description: string; image: string }) => (
+		<View style={styles.storyCard}>
+			<Image source={{ uri: image }} style={styles.storyImage} />
+			<View style={styles.storyContent}>
+				<Text style={styles.storyTitle}>{title}</Text>
+				<Text style={styles.storyDescription}>{description}</Text>
+			</View>
+		</View>
+	);
+
 	return (
 		<ScrollView style={styles.container}>
-			<Text style={styles.title}>Our Impact</Text>
+			<View style={styles.header}>
+				<Text style={styles.title}>Our Impact</Text>
+				<Text style={styles.subtitle}>Education for All Campaign</Text>
+			</View>
 
-			<View style={styles.statsGrid}>
-				<StatCard
-					title="Total Donations"
-					value={placeholderStats.totalDonations}
-					icon="volunteer-activism"
-				/>
-				<StatCard
-					title="Total Amount"
-					value={`$${placeholderStats.totalAmount.toLocaleString()}`}
-					icon="payments"
-				/>
-				<StatCard
-					title="Active Campaigns"
-					value={placeholderStats.activeCampaigns}
-					icon="campaign"
-				/>
-				<StatCard
-					title="Completed Campaigns"
-					value={placeholderStats.completedCampaigns}
-					icon="check-circle"
-				/>
+			<View style={styles.statsSection}>
+				<Text style={styles.sectionTitle}>Campaign Progress</Text>
+				<View style={styles.statsGrid}>
+					<StatCard
+						title="Total Donations"
+						value={impactStats.totalDonations}
+						icon="volunteer-activism"
+					/>
+					<StatCard
+						title="Total Amount"
+						value={`$${impactStats.totalAmount.toLocaleString()}`}
+						icon="payments"
+					/>
+				</View>
 			</View>
 
 			<View style={styles.section}>
-				<Text style={styles.sectionTitle}>Recent Success Stories</Text>
-				<TouchableOpacity style={styles.storyCard}>
-					<View style={styles.storyContent}>
-						<Text style={styles.storyTitle}>Education for All</Text>
-						<Text style={styles.storyDescription}>
-							Successfully funded education for 100 children in rural areas.
-						</Text>
-					</View>
-					<MaterialIcons name="arrow-forward" size={24} color="#666" />
-				</TouchableOpacity>
+				<Text style={styles.sectionTitle}>Impact Metrics</Text>
+				<View style={styles.statsGrid}>
+					<StatCard
+						title="Children Helped"
+						value={impactStats.childrenHelped}
+						icon="child-care"
+					/>
+					<StatCard
+						title="Schools Supported"
+						value={impactStats.schoolsSupported}
+						icon="school"
+					/>
+					<StatCard
+						title="Communities Reached"
+						value={impactStats.communitiesReached}
+						icon="location-city"
+					/>
+				</View>
+			</View>
 
-				<TouchableOpacity style={styles.storyCard}>
-					<View style={styles.storyContent}>
-						<Text style={styles.storyTitle}>Clean Water Project</Text>
-						<Text style={styles.storyDescription}>
-							Provided clean water access to 500 families in need.
-						</Text>
-					</View>
-					<MaterialIcons name="arrow-forward" size={24} color="#666" />
-				</TouchableOpacity>
+			<View style={styles.section}>
+				<Text style={styles.sectionTitle}>Success Stories</Text>
+				<ImpactStory
+					title="New School Building"
+					description="Thanks to your donations, we've completed the construction of a new school building in rural area, providing education to 50 children."
+					image="https://via.placeholder.com/300x200"
+				/>
+				<ImpactStory
+					title="School Supplies Distribution"
+					description="We've distributed essential school supplies to 100 students, ensuring they have the tools they need to learn effectively."
+					image="https://via.placeholder.com/300x200"
+				/>
 			</View>
 
 			<View style={styles.section}>
@@ -98,10 +125,16 @@ export default function ImpactScreen() {
 						<Text style={styles.impactTitle}>Your Donations</Text>
 						<Text style={styles.impactValue}>$1,500</Text>
 						<Text style={styles.impactDescription}>
-							You've helped 5 campaigns reach their goals
+							You've helped provide education to 6 children
 						</Text>
 					</View>
 				</TouchableOpacity>
+			</View>
+
+			<View style={styles.footer}>
+				<Text style={styles.footerText}>
+					Last updated: {impactStats.lastUpdate}
+				</Text>
 			</View>
 		</ScrollView>
 	);
@@ -112,25 +145,50 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#fff",
 	},
+	header: {
+		padding: 20,
+		backgroundColor: "#f8f8f8",
+	},
 	title: {
 		fontSize: 28,
 		fontWeight: "bold",
-		padding: 20,
 		color: "#333",
+		marginBottom: 4,
+	},
+	subtitle: {
+		fontSize: 16,
+		color: "#666",
+	},
+	section: {
+		padding: 20,
+	},
+	sectionTitle: {
+		fontSize: 20,
+		fontWeight: "bold",
+		color: "#333",
+		marginBottom: 16,
+	},
+	statsSection: {
+		padding: 20,
+		backgroundColor: "#f8f8f8",
 	},
 	statsGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",
-		padding: 10,
 		justifyContent: "space-between",
 	},
 	statCard: {
 		width: "48%",
-		backgroundColor: "#f8f8f8",
+		backgroundColor: "#fff",
 		borderRadius: 12,
 		padding: 16,
 		marginBottom: 16,
 		alignItems: "center",
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
 	},
 	statValue: {
 		fontSize: 24,
@@ -143,35 +201,34 @@ const styles = StyleSheet.create({
 		color: "#666",
 		textAlign: "center",
 	},
-	section: {
-		padding: 20,
-	},
-	sectionTitle: {
-		fontSize: 20,
-		fontWeight: "bold",
-		color: "#333",
-		marginBottom: 16,
-	},
 	storyCard: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "#f8f8f8",
+		backgroundColor: "#fff",
 		borderRadius: 12,
-		padding: 16,
-		marginBottom: 12,
+		marginBottom: 16,
+		overflow: "hidden",
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
+	},
+	storyImage: {
+		width: "100%",
+		height: 200,
 	},
 	storyContent: {
-		flex: 1,
+		padding: 16,
 	},
 	storyTitle: {
-		fontSize: 16,
+		fontSize: 18,
 		fontWeight: "bold",
 		color: "#333",
-		marginBottom: 4,
+		marginBottom: 8,
 	},
 	storyDescription: {
 		fontSize: 14,
 		color: "#666",
+		lineHeight: 20,
 	},
 	impactCard: {
 		flexDirection: "row",
@@ -199,5 +256,13 @@ const styles = StyleSheet.create({
 	impactDescription: {
 		fontSize: 14,
 		color: "#666",
+	},
+	footer: {
+		padding: 20,
+		alignItems: "center",
+	},
+	footerText: {
+		fontSize: 12,
+		color: "#999",
 	},
 });

@@ -11,34 +11,46 @@ import { useRouter } from "expo-router";
 
 interface DonationHistory {
 	id: number;
-	campaign: string;
 	amount: number;
 	date: string;
 	status: "completed" | "pending";
+	campaign: {
+		title: string;
+		image: string;
+	};
 }
 
 // Placeholder data - in a real app, this would come from an API
 const placeholderDonations: DonationHistory[] = [
 	{
 		id: 1,
-		campaign: "Education for All",
 		amount: 100,
 		date: "2024-03-15",
 		status: "completed",
+		campaign: {
+			title: "Education for All",
+			image: "https://via.placeholder.com/300x200",
+		},
 	},
 	{
 		id: 2,
-		campaign: "Clean Water Project",
 		amount: 50,
 		date: "2024-03-10",
 		status: "completed",
+		campaign: {
+			title: "Education for All",
+			image: "https://via.placeholder.com/300x200",
+		},
 	},
 	{
 		id: 3,
-		campaign: "Healthcare Initiative",
 		amount: 200,
 		date: "2024-03-05",
 		status: "pending",
+		campaign: {
+			title: "Education for All",
+			image: "https://via.placeholder.com/300x200",
+		},
 	},
 ];
 
@@ -75,7 +87,9 @@ export default function ProfileScreen() {
 	const DonationItem = ({ donation }: { donation: DonationHistory }) => (
 		<View style={styles.donationItem}>
 			<View style={styles.donationContent}>
-				<Text style={styles.donationTitle}>{donation.campaign}</Text>
+				<Text style={styles.donationTitle}>
+					Donation to {donation.campaign.title}
+				</Text>
 				<Text style={styles.donationDate}>{donation.date}</Text>
 			</View>
 			<View style={styles.donationAmount}>
@@ -104,9 +118,42 @@ export default function ProfileScreen() {
 		</View>
 	);
 
+	const DonationSummary = () => {
+		const totalDonated = placeholderDonations
+			.filter((d) => d.status === "completed")
+			.reduce((sum, d) => sum + d.amount, 0);
+
+		const totalPending = placeholderDonations
+			.filter((d) => d.status === "pending")
+			.reduce((sum, d) => sum + d.amount, 0);
+
+		return (
+			<View style={styles.summarySection}>
+				<Text style={styles.sectionTitle}>Donation Summary</Text>
+				<View style={styles.summaryGrid}>
+					<View style={styles.summaryCard}>
+						<Text style={styles.summaryValue}>${totalDonated}</Text>
+						<Text style={styles.summaryLabel}>Total Donated</Text>
+					</View>
+					<View style={styles.summaryCard}>
+						<Text style={styles.summaryValue}>${totalPending}</Text>
+						<Text style={styles.summaryLabel}>Pending</Text>
+					</View>
+					<View style={styles.summaryCard}>
+						<Text style={styles.summaryValue}>
+							{placeholderDonations.length}
+						</Text>
+						<Text style={styles.summaryLabel}>Total Donations</Text>
+					</View>
+				</View>
+			</View>
+		);
+	};
+
 	return (
 		<ScrollView style={styles.container}>
 			<ProfileHeader />
+			<DonationSummary />
 
 			<View style={styles.section}>
 				<Text style={styles.sectionTitle}>Donation History</Text>
@@ -171,6 +218,38 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "#333",
 		marginBottom: 16,
+	},
+	summarySection: {
+		padding: 20,
+		backgroundColor: "#f8f8f8",
+	},
+	summaryGrid: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+	},
+	summaryCard: {
+		flex: 1,
+		backgroundColor: "#fff",
+		borderRadius: 12,
+		padding: 16,
+		marginHorizontal: 6,
+		alignItems: "center",
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
+	},
+	summaryValue: {
+		fontSize: 24,
+		fontWeight: "bold",
+		color: "#4CAF50",
+		marginBottom: 4,
+	},
+	summaryLabel: {
+		fontSize: 14,
+		color: "#666",
+		textAlign: "center",
 	},
 	donationItem: {
 		flexDirection: "row",
