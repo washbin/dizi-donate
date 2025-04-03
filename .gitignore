@@ -38,3 +38,5 @@ yarn-error.*
 app-example
 
 .cursor/
+
+expo-env.d.ts
