@@ -1,8 +1,10 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, useContext, useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const API_BASE_URL = "https://localhost:3000";
 
 type User = {
-  id: string;
+  token: string;
   email: string;
   name: string;
 };
@@ -28,12 +30,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function loadStoredUser() {
     try {
-      const storedUser = await AsyncStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+      const user = await AsyncStorage.getItem("user");
+      if (user) {
+        setUser(JSON.parse(user));
       }
     } catch (error) {
-      console.error('Error loading stored user:', error);
+      console.error("Error loading stored user:", error);
     } finally {
       setIsLoading(false);
     }
@@ -41,44 +43,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signIn(email: string, password: string) {
     try {
-      // TODO: Implement actual authentication logic here
-      // For now, we'll simulate a successful login
-      const mockUser = {
-        id: '1',
-        email,
-        name: 'Test User',
-      };
-      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      const response = await fetch(`${API_BASE_URL}/users/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const error = (await response.json()).error;
+        throw new Error(error);
+      }
+
+      const data = (await response.json()).data;
+
+      await AsyncStorage.setItem("user", JSON.stringify(user));
+      setUser(data);
     } catch (error) {
-      console.error('Error signing in:', error);
+      console.error("Error signing in:", error);
       throw error;
     }
   }
 
   async function signUp(email: string, password: string, name: string) {
     try {
-      // TODO: Implement actual signup logic here
-      // For now, we'll simulate a successful signup
-      const mockUser = {
-        id: '1',
-        email,
-        name,
-      };
-      // await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-      // setUser(mockUser);
+      const response = await fetch(`${API_BASE_URL}/users/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password, name }),
+      });
+      if (!response.ok) {
+        const error = (await response.json()).error;
+        throw new Error(error);
+      }
     } catch (error) {
-      console.error('Error signing up:', error);
+      console.error("Error signing up:", error);
       throw error;
     }
   }
 
   async function signOut() {
     try {
-      await AsyncStorage.removeItem('user');
+      await AsyncStorage.removeItem("user");
       setUser(null);
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
       throw error;
     }
   }
@@ -93,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

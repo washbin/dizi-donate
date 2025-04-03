@@ -21,7 +21,7 @@ export default function LoginScreen() {
       Alert.alert("Logged in succesfully.");
       router.replace("/home");
     } catch (error) {
-      Alert.alert("Error", "Failed to sign in. Please try again.");
+      Alert.alert("Error", error.message);
     }
   };
 

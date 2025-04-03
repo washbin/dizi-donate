@@ -22,7 +22,7 @@ export default function SignUpScreen() {
       Alert.alert("Sign Up succesfull.");
       router.replace("/login");
     } catch (error) {
-      Alert.alert("Error", "Failed to sign up. Please try again.");
+      Alert.alert("Error", error.message);
     }
   };
 
