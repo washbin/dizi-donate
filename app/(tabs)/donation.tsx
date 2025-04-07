@@ -5,19 +5,22 @@ import {
   ScrollView,
   TouchableOpacity,
   Text,
+  TextInput,
 } from "react-native";
 import { API_BASE_URL } from "@/config/api";
-import { useStripe } from "@stripe/stripe-react-native";
+import { useStripe, retrievePaymentIntent } from "@stripe/stripe-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-
 import { Colors } from "@/constants/Colors";
-import { TextInput } from "react-native";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function DonationScreen() {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { user } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("10");
+  const [clientSecret, setClientSecret] = useState("");
 
   const fetchPaymentSheetParams = async () => {
     const response = await fetch(`${API_BASE_URL}/donations/payment-sheet`, {
@@ -26,13 +29,15 @@ export default function DonationScreen() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: Number.parseFloat(amount) * 100,
+        amount: Number.parseFloat(amount) * 100, // Convert to cents
         currency: "GBP",
       }),
     });
+
     if (!response.ok) {
       throw new Error("Failed to fetch payment sheet parameters");
     }
+
     const { paymentIntent, ephemeralKey, customer } = await response.json();
 
     return {
@@ -43,23 +48,29 @@ export default function DonationScreen() {
   };
 
   const initializePaymentSheet = async () => {
-    const { paymentIntent, ephemeralKey, customer } =
-      await fetchPaymentSheetParams();
+    try {
+      const { paymentIntent, ephemeralKey, customer } =
+        await fetchPaymentSheetParams();
 
-    const { error } = await initPaymentSheet({
-      merchantDisplayName: "Example, Inc.",
-      customerId: customer,
-      customerEphemeralKeySecret: ephemeralKey,
-      paymentIntentClientSecret: paymentIntent,
-      // Set `allowsDelayedPaymentMethods` to true if your business can handle payment
-      //methods that complete payment after a delay, like SEPA Debit and Sofort.
-      allowsDelayedPaymentMethods: true,
-      defaultBillingDetails: {
-        name: "Jane Doe",
-      },
-    });
-    if (!error) {
-      setLoading(true);
+      setClientSecret(paymentIntent);
+
+      const { error } = await initPaymentSheet({
+        merchantDisplayName: "Example, Inc.",
+        customerId: customer,
+        customerEphemeralKeySecret: ephemeralKey,
+        paymentIntentClientSecret: paymentIntent,
+        allowsDelayedPaymentMethods: true,
+        defaultBillingDetails: {
+          name: "Jane Doe",
+        },
+      });
+
+      if (!error) {
+        setLoading(true);
+      }
+    } catch (e) {
+      console.error("Error initializing payment sheet:", e);
+      Alert.alert("Error", "Unable to initialize payment.");
     }
   };
 
@@ -69,7 +80,26 @@ export default function DonationScreen() {
     if (error) {
       Alert.alert(`Error code: ${error.code}`, error.message);
     } else {
-      Alert.alert("Success", "Your order is confirmed!");
+      try {
+        const result = await retrievePaymentIntent(clientSecret);
+        const paymentIntentId = result?.paymentIntent?.id;
+
+        if (paymentIntentId) {
+          await fetch(`${API_BASE_URL}/donations/save-payment`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${user?.token}`,
+            },
+            body: JSON.stringify({ paymentIntentId }),
+          });
+        }
+
+        Alert.alert("Success", "Your donation has been received!");
+      } catch (e) {
+        console.error("Failed to save payment:", e);
+        Alert.alert("Success", "Payment succeeded, but we couldn't save it.");
+      }
     }
   };
 
@@ -125,14 +155,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textAlign: "center",
   },
-  card: {
-    padding: 24,
-  },
   label: {
     marginBottom: 4,
-  },
-  currencyLabel: {
-    marginTop: 24,
   },
   inputContainer: {
     flexDirection: "row",
@@ -149,16 +173,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     padding: 8,
     borderBottomWidth: 2,
-  },
-  pickerContainer: {
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 32,
-    overflow: "hidden",
-    backgroundColor: "#fff",
-  },
-  picker: {
-    height: 50,
   },
   button: {
     backgroundColor: "#4CAF50",

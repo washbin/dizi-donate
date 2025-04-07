@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  process.env.API_BASE_URL || "http://192.168.1.78:3000";
+  process.env.API_BASE_URL || "http://192.168.1.70:3000";
 export const STRIPE_PUBLISHABLE_KEY =
   process.env.STRIPE_PUBLISHABLE_KEY ||
   "pk_test_51RAZMxIAbtA8fEqDxBMTCTV1VRiH7WqsLc3VWxH5ArAcM0A8qqXbSUKILAAXCZOz3KO2qlivOHkCRnGAlkSEVw5N00c65qUymP";

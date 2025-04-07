@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/config/api";
 
 interface Campaign {
   title: string;
@@ -44,7 +46,38 @@ type MaterialIconName = keyof typeof MaterialIcons.glyphMap;
 
 export default function HomeScreen() {
   const router = useRouter();
-  const progress = (campaign.raised / campaign.target) * 100;
+
+  const [stats, setStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDonationHistory = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/campaign/stats`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch donation history");
+      }
+
+      const data = await response.json();
+      setStats(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDonationHistory();
+  }, []);
+
+  const progress = (stats.totalAmount / stats.target) * 100;
 
   const ImpactCard = ({ title, value }: { title: string; value: string }) => (
     <View style={styles.impactCard}>
@@ -75,22 +108,9 @@ export default function HomeScreen() {
               <View style={[styles.progressFill, { width: `${progress}%` }]} />
             </View>
             <Text style={styles.progressText}>
-              £{campaign.raised.toLocaleString()} / £
-              {campaign.target.toLocaleString()}
+              £{stats.totalAmount} / £
+              {stats.target}
             </Text>
-          </View>
-
-          <View style={styles.impactSection}>
-            <Text style={styles.sectionTitle}>Our Impact</Text>
-            <View style={styles.impactGrid}>
-              {campaign.impact.map((item) => (
-                <ImpactCard
-                  key={item.title}
-                  title={item.title}
-                  value={item.value}
-                />
-              ))}
-            </View>
           </View>
 
           <View style={styles.campaignFooter}>

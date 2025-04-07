@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/config/api";
 
 interface ImpactStats {
   totalDonations: number;
@@ -32,6 +34,37 @@ type MaterialIconName = keyof typeof MaterialIcons.glyphMap;
 
 export default function ImpactScreen() {
   const router = useRouter();
+
+
+    const [stats, setStats] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+  
+    const fetchDonationHistory = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/campaign/stats`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error("Failed to fetch donation history");
+        }
+  
+        const data = await response.json();
+        setStats(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    useEffect(() => {
+      fetchDonationHistory();
+    }, []);
 
   const StatCard = ({
     title,
@@ -71,12 +104,12 @@ export default function ImpactScreen() {
         <View style={styles.statsGrid}>
           <StatCard
             title="Total Donations"
-            value={impactStats.totalDonations}
+            value={stats.totalDonations}
             icon="volunteer-activism"
           />
           <StatCard
             title="Total Amount"
-            value={`£${impactStats.totalAmount.toLocaleString()}`}
+            value={`£${stats.totalAmount}`}
             icon="payments"
           />
         </View>

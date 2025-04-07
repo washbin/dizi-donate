@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = (await response.json()).data;
 
-      await AsyncStorage.setItem("user", JSON.stringify(user));
+      await AsyncStorage.setItem("user", JSON.stringify(data));
       setUser(data);
     } catch (error) {
       console.error("Error signing in:", error);

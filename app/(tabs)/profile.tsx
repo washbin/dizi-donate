@@ -6,63 +6,59 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/config/api";
 
 interface DonationHistory {
   id: number;
   amount: number;
   date: string;
   status: "completed" | "pending";
-  campaign: {
-    title: string;
-    image: string;
-  };
 }
-
-// Placeholder data - in a real app, this would come from an API
-const placeholderDonations: DonationHistory[] = [
-  {
-    id: 1,
-    amount: 100,
-    date: "2024-03-15",
-    status: "completed",
-    campaign: {
-      title: "Education for All",
-      image: "https://via.placeholder.com/300x200",
-    },
-  },
-  {
-    id: 2,
-    amount: 50,
-    date: "2024-03-10",
-    status: "completed",
-    campaign: {
-      title: "Education for All",
-      image: "https://via.placeholder.com/300x200",
-    },
-  },
-  {
-    id: 3,
-    amount: 200,
-    date: "2024-03-05",
-    status: "pending",
-    campaign: {
-      title: "Education for All",
-      image: "https://via.placeholder.com/300x200",
-    },
-  },
-];
 
 type MaterialIconName = keyof typeof MaterialIcons.glyphMap;
 
 export default function ProfileScreen() {
   const router = useRouter();
 
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+
+  const [donations, setDonations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDonationHistory = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/donations`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`, // Pass JWT token in header
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch donation history");
+      }
+
+      const data = await response.json();
+      setDonations(data.donations);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDonationHistory();
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -72,8 +68,6 @@ export default function ProfileScreen() {
       Alert.alert("Error", "Failed to sign in. Please try again.");
     }
   };
-
-  const { user } = useAuth();
 
   const ProfileHeader = () => (
     <View style={styles.header}>
@@ -103,13 +97,11 @@ export default function ProfileScreen() {
   const DonationItem = ({ donation }: { donation: DonationHistory }) => (
     <View style={styles.donationItem}>
       <View style={styles.donationContent}>
-        <Text style={styles.donationTitle}>
-          Donation to {donation.campaign.title}
-        </Text>
+        <Text style={styles.donationTitle}>Donation to Children Welfare</Text>
         <Text style={styles.donationDate}>{donation.date}</Text>
       </View>
       <View style={styles.donationAmount}>
-        <Text style={styles.amountText}>£{donation.amount}</Text>
+        <Text style={styles.amountText}>£{donation.amount / 100}</Text>
         <View
           style={[
             styles.statusBadge,
@@ -135,11 +127,11 @@ export default function ProfileScreen() {
   );
 
   const DonationSummary = () => {
-    const totalDonated = placeholderDonations
-      .filter((d) => d.status === "completed")
+    const totalDonated = donations
+      .filter((d) => d.status === "succeeded")
       .reduce((sum, d) => sum + d.amount, 0);
 
-    const totalPending = placeholderDonations
+    const totalPending = donations
       .filter((d) => d.status === "pending")
       .reduce((sum, d) => sum + d.amount, 0);
 
@@ -148,17 +140,15 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>Donation Summary</Text>
         <View style={styles.summaryGrid}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>£{totalDonated}</Text>
+            <Text style={styles.summaryValue}>£{totalDonated / 100}</Text>
             <Text style={styles.summaryLabel}>Total Donated</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>£{totalPending}</Text>
+            <Text style={styles.summaryValue}>£{totalPending / 100}</Text>
             <Text style={styles.summaryLabel}>Pending</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>
-              {placeholderDonations.length}
-            </Text>
+            <Text style={styles.summaryValue}>{donations.length}</Text>
             <Text style={styles.summaryLabel}>Total Donations</Text>
           </View>
         </View>
@@ -173,16 +163,24 @@ export default function ProfileScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Donation History</Text>
-        {placeholderDonations.map((donation) => (
-          <DonationItem key={donation.id} donation={donation} />
-        ))}
+        {loading ? (
+          <View style={styles.container}>
+            <ActivityIndicator size="large" color="#0000ff" />
+          </View>
+        ) : (
+          donations.map((donation) => (
+            <DonationItem key={donation.id} donation={donation} />
+          ))
+        )}
+
+        {error ? (
+          <View style={styles.container}>
+            <Text>{error}</Text>
+          </View>
+        ) : null}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Settings</Text>
-        <SettingsItem icon="person" title="Edit Profile" onPress={() => {}} />
-        <SettingsItem icon="logout" title="Logout" onPress={handleLogout} />
-      </View>
+      <SettingsItem icon="logout" title="Logout" onPress={handleLogout} />
     </ScrollView>
   );
 }
