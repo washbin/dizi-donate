@@ -1,168 +1,164 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Alert,
-  Image,
+  ScrollView,
+  TouchableOpacity,
+  Text,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import { API_BASE_URL } from "@/config/api";
+import { useStripe } from "@stripe/stripe-react-native";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 
-interface DonationForm {
-  amount: string;
-  paymentMethod: "qr" | "nfc" | null;
-}
+import { Colors } from "@/constants/Colors";
+import { TextInput } from "react-native";
 
 export default function DonationScreen() {
-  const [form, setForm] = useState<DonationForm>({
-    amount: "",
-    paymentMethod: null,
-  });
-  const router = useRouter();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const [loading, setLoading] = useState(false);
+  const [amount, setAmount] = useState("10");
 
-  const handleDonate = () => {
-    const amount = Number.parseFloat(form.amount);
-    if (Number.isNaN(amount) || amount <= 0) {
-      Alert.alert("Error", "Please enter a valid amount");
-      return;
+  const fetchPaymentSheetParams = async () => {
+    const response = await fetch(`${API_BASE_URL}/donations/payment-sheet`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: Number.parseFloat(amount) * 100,
+        currency: "GBP",
+      }),
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch payment sheet parameters");
     }
+    const { paymentIntent, ephemeralKey, customer } = await response.json();
 
-    if (!form.paymentMethod) {
-      Alert.alert("Error", "Please select a payment method");
-      return;
-    }
-
-    // TODO: Implement actual payment processing based on selected method
-    Alert.alert("Success", "Thank you for your donation!");
-    router.back();
+    return {
+      paymentIntent,
+      ephemeralKey,
+      customer,
+    };
   };
 
+  const initializePaymentSheet = async () => {
+    const { paymentIntent, ephemeralKey, customer } =
+      await fetchPaymentSheetParams();
+
+    const { error } = await initPaymentSheet({
+      merchantDisplayName: "Example, Inc.",
+      customerId: customer,
+      customerEphemeralKeySecret: ephemeralKey,
+      paymentIntentClientSecret: paymentIntent,
+      // Set `allowsDelayedPaymentMethods` to true if your business can handle payment
+      //methods that complete payment after a delay, like SEPA Debit and Sofort.
+      allowsDelayedPaymentMethods: true,
+      defaultBillingDetails: {
+        name: "Jane Doe",
+      },
+    });
+    if (!error) {
+      setLoading(true);
+    }
+  };
+
+  const openPaymentSheet = async () => {
+    const { error } = await presentPaymentSheet();
+
+    if (error) {
+      Alert.alert(`Error code: ${error.code}`, error.message);
+    } else {
+      Alert.alert("Success", "Your order is confirmed!");
+    }
+  };
+
+  useEffect(() => {
+    initializePaymentSheet();
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Make a Donation</Text>
+    <ScrollView style={styles.container}>
+      <ThemedView style={styles.content}>
+        <ThemedText type="title" style={styles.title}>
+          Make a Donation
+        </ThemedText>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.label}>Donation Amount ($)</Text>
-        <TextInput
-          style={styles.input}
-          value={form.amount}
-          onChangeText={(text) => setForm({ ...form, amount: text })}
-          keyboardType="numeric"
-          placeholder="Enter amount"
-        />
+        <ThemedText type="defaultSemiBold" style={styles.label}>
+          Amount
+        </ThemedText>
+        <ThemedView style={styles.inputContainer}>
+          <ThemedText type="default" style={styles.currencySymbol}>
+            £
+          </ThemedText>
+          <TextInput
+            style={styles.input}
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="decimal-pad"
+            placeholder="10"
+          />
+        </ThemedView>
 
-        <Text style={styles.label}>Payment Method</Text>
-        <View style={styles.paymentMethods}>
-          <TouchableOpacity
-            style={[
-              styles.paymentMethod,
-              form.paymentMethod === "qr" && styles.selectedMethod,
-            ]}
-            onPress={() => setForm({ ...form, paymentMethod: "qr" })}
-          >
-            <MaterialIcons
-              name="qr-code"
-              size={24}
-              color={form.paymentMethod === "qr" ? "#fff" : "#666"}
-            />
-            <Text
-              style={[
-                styles.methodText,
-                form.paymentMethod === "qr" && styles.selectedMethodText,
-              ]}
-            >
-              QR Code
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.paymentMethod,
-              form.paymentMethod === "nfc" && styles.selectedMethod,
-            ]}
-            onPress={() => setForm({ ...form, paymentMethod: "nfc" })}
-          >
-            <MaterialIcons
-              name="nfc"
-              size={24}
-              color={form.paymentMethod === "nfc" ? "#fff" : "#666"}
-            />
-            <Text
-              style={[
-                styles.methodText,
-                form.paymentMethod === "nfc" && styles.selectedMethodText,
-              ]}
-            >
-              NFC
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity style={styles.button} onPress={handleDonate}>
-          <Text style={styles.buttonText}>Donate Now</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={openPaymentSheet}
+          disabled={!loading || !amount || Number.parseFloat(amount) <= 0}
+        >
+          <Text style={styles.buttonText}>Proceed to Payment</Text>
         </TouchableOpacity>
-      </View>
-    </View>
+      </ThemedView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: "#fff",
+  },
+  content: {
+    padding: 24,
     backgroundColor: "#fff",
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 32,
+    textAlign: "center",
   },
-  formContainer: {
-    marginTop: 20,
+  card: {
+    padding: 24,
   },
   label: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: "#333",
+    marginBottom: 4,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 20,
+  currencyLabel: {
+    marginTop: 24,
   },
-  paymentMethods: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  paymentMethod: {
-    flex: 1,
+  inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    padding: 15,
-    borderRadius: 8,
+    marginBottom: 16,
+    backgroundColor: "#fff",
+  },
+  currencySymbol: {
+    marginRight: 4,
+    fontSize: 24,
+  },
+  input: {
+    flex: 1,
+    fontSize: 24,
+    padding: 8,
+    borderBottomWidth: 2,
+  },
+  pickerContainer: {
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
-    marginHorizontal: 5,
+    marginBottom: 32,
+    overflow: "hidden",
+    backgroundColor: "#fff",
   },
-  selectedMethod: {
-    backgroundColor: "#4CAF50",
-    borderColor: "#4CAF50",
-  },
-  methodText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: "#666",
-  },
-  selectedMethodText: {
-    color: "#fff",
+  picker: {
+    height: 50,
   },
   button: {
     backgroundColor: "#4CAF50",
@@ -171,7 +167,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    color: "#fff",
+    color: Colors.dark.text,
     fontSize: 16,
     fontWeight: "bold",
   },

@@ -181,13 +181,6 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         <SettingsItem icon="person" title="Edit Profile" onPress={() => {}} />
-        <SettingsItem
-          icon="notifications"
-          title="Notifications"
-          onPress={() => {}}
-        />
-        <SettingsItem icon="security" title="Security" onPress={() => {}} />
-        <SettingsItem icon="help" title="Help & Support" onPress={() => {}} />
         <SettingsItem icon="logout" title="Logout" onPress={handleLogout} />
       </View>
     </ScrollView>

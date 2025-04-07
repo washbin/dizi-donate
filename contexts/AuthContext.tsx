@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = "https://localhost:3000";
+import { API_BASE_URL } from "@/config/api";
 
 type User = {
   token: string;

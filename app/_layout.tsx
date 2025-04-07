@@ -1,3 +1,4 @@
+import { SafeAreaView, StyleSheet } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -7,12 +8,13 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "react-native-reanimated";
+import { StripeProvider } from "@stripe/stripe-react-native";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { SafeAreaView, StyleSheet } from "react-native";
+import { STRIPE_PUBLISHABLE_KEY } from "@/config/api";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -36,13 +38,15 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <SafeAreaView style={styles.container}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          <StatusBar style="inverted" />
-        </SafeAreaView>
+        <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
+          <SafeAreaView style={styles.container}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+            <StatusBar style="inverted" />
+          </SafeAreaView>
+        </StripeProvider>
       </AuthProvider>
     </ThemeProvider>
   );
